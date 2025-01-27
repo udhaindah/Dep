@@ -1,15 +1,14 @@
-import axios from 'axios';
+import cloudscraper from 'cloudscraper';
 import fs from 'fs/promises';
 import chalk from 'chalk';
 import ora from 'ora';
 import Table from 'cli-table3';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import figlet from 'figlet'; // Tambahkan ini
+import figlet from 'figlet';
 
 const BASE_URL = 'https://api.depined.org/api';
 
-// Fungsi untuk menampilkan banner ASCII art
 const displayBanner = () => {
   console.log(chalk.green(figlet.textSync('AirdropInsiders', { horizontalLayout: 'default' })));
 };
@@ -106,27 +105,32 @@ const createProxyAgent = (proxyConfig) => {
   }
 };
 
-// Get stats
+// Get stats using cloudscraper
 const getStats = async (token, proxyConfig = null) => {
   const headers = {
     'Accept': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://depined.org/',
+    'Origin': 'https://depined.org/',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Connection': 'keep-alive'
   };
 
   try {
-    const axiosConfig = {
+    const options = {
+      uri: `${BASE_URL}/stats/earnings`,
       headers,
-      timeout: 10000
+      method: 'GET',
+      resolveWithFullResponse: true
     };
 
     if (proxyConfig) {
-      axiosConfig.httpsAgent = createProxyAgent(proxyConfig);
+      options.agent = createProxyAgent(proxyConfig);
     }
 
-    const res = await axios.get(`${BASE_URL}/stats/earnings`, axiosConfig);
-    
-    const data = res.data.data;
+    const response = await cloudscraper(options);
+    const data = JSON.parse(response.body).data;
     return {
       pointsToday: data.total_points_today || 0,
       totalPoints: data.total_points_balance || 0
@@ -136,59 +140,69 @@ const getStats = async (token, proxyConfig = null) => {
   }
 };
 
-// Get user profile
+// Get user profile using cloudscraper
 const getUserProfile = async (token, proxyConfig = null) => {
   const headers = {
     'Accept': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://depined.org/',
+    'Origin': 'https://depined.org/',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Connection': 'keep-alive'
   };
 
   try {
-    const axiosConfig = {
+    const options = {
+      uri: `${BASE_URL}/user/overview/profile`,
       headers,
-      timeout: 10000
+      method: 'GET',
+      resolveWithFullResponse: true
     };
 
     if (proxyConfig) {
-      axiosConfig.httpsAgent = createProxyAgent(proxyConfig);
+      options.agent = createProxyAgent(proxyConfig);
     }
 
-    const res = await axios.get(`${BASE_URL}/user/overview/profile`, axiosConfig);
+    const response = await cloudscraper(options);
+    const data = JSON.parse(response.body).data;
     return {
-      username: res.data.data.profile.username || '-',
-      email: res.data.data.user_details.email || '-'
+      username: data.profile.username || '-',
+      email: data.user_details.email || '-'
     };
   } catch (error) {
     throw error;
   }
 };
 
-// Ping function
+// Ping function using cloudscraper
 const ping = async (token, proxyConfig = null) => {
   const headers = {
     'Accept': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://depined.org/',
+    'Origin': 'https://depined.org/',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Connection': 'keep-alive'
   };
 
   try {
-    const axiosConfig = {
+    const options = {
+      uri: `${BASE_URL}/user/widget-connect`,
       headers,
-      timeout: 10000
+      method: 'POST',
+      body: { connected: true },
+      json: true,
+      resolveWithFullResponse: true
     };
 
     if (proxyConfig) {
-      axiosConfig.httpsAgent = createProxyAgent(proxyConfig);
+      options.agent = createProxyAgent(proxyConfig);
     }
 
-    const res = await axios.post(
-      `${BASE_URL}/user/widget-connect`,
-      { connected: true },
-      axiosConfig
-    );
-    
-    return res.data;
+    const response = await cloudscraper(options);
+    return response.body;
   } catch (error) {
     throw error;
   }
