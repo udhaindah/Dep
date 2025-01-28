@@ -6,6 +6,7 @@ import Table from 'cli-table3';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import figlet from 'figlet';
+import readline from 'readline';
 
 const BASE_URL = 'https://api.depined.org/api';
 
@@ -209,7 +210,7 @@ const ping = async (token, proxyConfig = null) => {
 };
 
 // Read and validate input files
-const readInputFiles = async () => {
+const readInputFiles = async (useProxy) => {
   try {
     const tokenData = await fs.readFile('data.txt', 'utf8');
     const tokens = tokenData.split('\n')
@@ -221,14 +222,16 @@ const readInputFiles = async () => {
     }
 
     let proxies = [];
-    try {
-      const proxyData = await fs.readFile('proxy.txt', 'utf8');
-      proxies = proxyData.split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(proxyString => parseProxyString(proxyString));
-    } catch (error) {
-      console.log(chalk.yellow('No proxy.txt found or error reading proxies. Running without proxies.'));
+    if (useProxy) {
+      try {
+        const proxyData = await fs.readFile('proxy.txt', 'utf8');
+        proxies = proxyData.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(proxyString => parseProxyString(proxyString));
+      } catch (error) {
+        console.log(chalk.yellow('No proxy.txt found or error reading proxies. Running without proxies.'));
+      }
     }
 
     return { tokens, proxies };
@@ -237,12 +240,45 @@ const readInputFiles = async () => {
   }
 };
 
+// Function to wait for user to press any key
+const waitForAnyKey = async (message) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  console.log(chalk.yellow(message));
+  return new Promise((resolve) => {
+    rl.question('Press any key to continue...', () => {
+      rl.close();
+      resolve();
+    });
+  });
+};
+
 // Main function
 const main = async () => {
   displayBanner(); // Tampilkan banner saat aplikasi dimulai
 
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const useProxy = await new Promise((resolve) => {
+    rl.question('Do you want to use proxy? (y/n): ', (answer) => {
+      resolve(answer.toLowerCase() === 'y');
+    });
+  });
+
+  if (useProxy) {
+    await waitForAnyKey('\nNOTE: Using proxy may cause Cloudflare issues.\nIf you encounter errors, consider switching to Direct Mode (no proxy).\n');
+  }
+
+  rl.close();
+
   const spinner = ora('Reading input files...').start();
-  const { tokens, proxies } = await readInputFiles();
+  const { tokens, proxies } = await readInputFiles(useProxy);
   spinner.succeed(`Loaded ${tokens.length} tokens and ${proxies.length} proxies`);
 
   const accounts = tokens.map((token, index) => ({
